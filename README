@@ -1,0 +1,101 @@
+CALENDAR(1)                 General Commands Manual                CALENDAR(1)
+
+
+
+NAME
+       calendar - print upcoming events
+
+SYNOPSIS
+       calendar [-d] [-A num] [-B num] [-t [[[cc]yy]mm]dd] [file...]
+
+DESCRIPTION
+       calendar reads the standard input, or the named files, for events, one
+       event per line; and write to standard output those events beginning
+       with either today's date or tomorrow's.  On Fridays and Saturdays,
+       events through Monday are printed.
+
+       The options are as follows:
+
+       -A num Print lines from today and next num days (forward, future).
+
+       -B num Print lines from today and previous num days (backward, past).
+
+       -d     Rather than print the date on the same line of each event, print
+              the date alone in a line and followed by each event indented
+              with a tab.
+
+       -t[[yyyy]mm]dd
+              Act like the specified value is “today” instead of using the
+              current date.
+
+       Each read line should begin with a date pattern in the format
+       [[YYYY-[MM]]-DD.  The hyphen (-) that separates the values can be
+       replaced by a slash (/) or a period (.).
+
+       YYYY should be any year number.  MM should be a month number or a month
+       name (either complete or abbreviate, such as "April" or "Apr").  DD
+       should be the number of a day in the month or the name of a day in the
+       week (either complete or abbreviate).
+
+       If DD is the name of a day in the week, it can be followed by +N or -N
+       to specify the week on the month (for example Sun+2 is the second
+       Sunday in the month, Mon-3 is the third from last Monday in the month).
+
+EXAMPLES
+       Consider the following input.
+
+              # holidays
+              01-01      New Year's day
+              05-01      Labor Day
+              07-25      Generic holiday
+              12-25      Christmas
+              May-Sun+2  Mother's day
+
+              # classes
+              Mon,Wed Java Class
+              Tue,Thu Algebra Class
+              Tue,Thu Operating Systems Class
+              Tue,Thu Computer Network Class
+
+       If today were 09 March 2021, then running calendar with the options -d
+       and -A7 on this input would print the following:
+
+              Sunday     09 May 09
+                      Mother's day
+              Monday     10 May 10
+                      Java Class
+              Tuesday    11 May 11
+                      Algebra Class
+                      Computer Network Class
+                      Operating Systems Class
+              Wednesday  12 May 12
+                      Java Class
+              Thursday   13 May 13
+                      Algebra Class
+                      Computer Network Class
+                      Operating Systems Class
+
+SEE ALSO
+       at(1), cal(1), cron(1)
+
+STANDARDS
+       The calendar program previously selected lines which had the correct
+       date anywhere in the line.  This is no longer true: the date is only
+       recognized when it occurs at the beginning of a line.
+
+       The calendar program previously read events from a file called calendar
+       in the current directory or in a specified directory.  This is no
+       longer true: it reads the events from the standard input or from the
+       named files.  This new behavior makes calendar more scriptable (it can
+       be used in a shell pipeline, for example).
+
+       The calendar program previously had an option to send a mail to all
+       users.  This is no longer true.  To have your calendar mailed to you
+       every day, use cron(8).
+
+HISTORY
+       A calendar command appeared in Version 7 AT&T UNIX.
+
+
+
+                                                                   CALENDAR(1)
