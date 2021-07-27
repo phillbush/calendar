@@ -9,10 +9,13 @@ SYNOPSIS
        calendar [-d] [-A num] [-B num] [-t [[[cc]yy]mm]dd] [file...]
 
 DESCRIPTION
-       calendar reads the standard input, or the named files, for events, one
-       event per line; and write to standard output those events beginning
-       with either today's date or tomorrow's.  On Fridays and Saturdays,
-       events through Monday are printed.
+       calendar reads the named files for events, one event per line; and
+       write to standard output those events beginning with either today's
+       date or tomorrow's.  On Fridays and Saturdays, events through Monday
+       are printed.  If a hyphen (-) is provided as argument, calendar reads
+       from the standard input.  If no file is provided as argument, calendar
+       reads the file named calendar on the current directory or on the
+       directory specified by the CALENDAR_DIR environment variable.
 
        The options are as follows:
 
@@ -84,19 +87,17 @@ STANDARDS
        date anywhere in the line.  This is no longer true: the date is only
        recognized when it occurs at the beginning of a line.
 
-       The calendar program previously interpreted one date for each event.
-       This is no longer true: each event can occur on more than one date (see
-       the examples for the classes above).
+       The calendar program previously could interpret only one date for each
+       event.  This is no longer true: each event can occur in more than one
+       date (see the examples for the classes above).
 
-       The calendar program previously read events from a file called calendar
-       in the current directory or in a specified directory.  This is no
-       longer true: it reads the events from the standard input or from the
-       named files.  This new behavior makes calendar more scriptable (it can
-       be used in a shell pipeline, for example).
+       The calendar program previously could not read events from the standard
+       input.  This is no longer true: if the argument is a hyphen (-), events
+       are read from the standard input.
 
        The calendar program previously had an option to send a mail to all
-       users.  This is no longer true.  To have your calendar mailed to you
-       every day, use cron(8).
+       users.  This is no longer true.  To have your calendar mailed every
+       day, use cron(8).
 
 HISTORY
        A calendar command appeared in Version 7 AT&T UNIX.
