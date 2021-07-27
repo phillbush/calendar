@@ -1,6 +1,6 @@
 #!/bin/sh
 
-awk '
+exec awk '
 # show usage and exit
 function usage() {
 	print "usage: calendar [-d] [-A num] [-B num] -t [yyyymmdd] [file ...]" >"/dev/stderr"
