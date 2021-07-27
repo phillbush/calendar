@@ -291,7 +291,7 @@ BEGIN {
 	if (time < 0) {
 		err("invalid time")
 	}
-	time += before * SECSPERDAY
+	time -= before * SECSPERDAY
 	year  = strftime("%Y", time) + 0
 	month = strftime("%m", time) + 0
 	day   = strftime("%d", time) + 0
