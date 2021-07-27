@@ -32,15 +32,16 @@ DESCRIPTION
               current date.
 
        Each event should begin with a date pattern in the format
-       [[YYYY-[MM]]-DD or should be the name of a movable fest, such as
+       [[YYYY-[MM]]-DDWW or should be the name of a movable fest, such as
        easter.  The hyphen (-) that separates the values can be replaced by a
        slash (/) or a period (.).  Several date patterns can be supplied
        separated by a comma (,).
 
        YYYY should be any year number.  MM should be a month number or a month
        name (either complete or abbreviate, such as "April" or "Apr").  DD
-       should be the number of a day in the month or the name of a day in the
-       week (either complete or abbreviate).
+       should be the number of a day in the month.  WW should be the name of a
+       day in the week (either complete or abbreviate).  Either DD or WW (or
+       both) must be supplied.
 
        If DD is the name of a day in the week, it can be followed by +N or -N
        to specify the week on the month (for example Sun+2 is the second
@@ -50,11 +51,12 @@ EXAMPLES
        Consider the following input.
 
               # holidays
-              01-01      New Year's day
-              05-01      Labor Day
-              07-25      Generic holiday
-              12-25      Christmas
-              May-Sun+2  Mother's day
+              01/01      New Year's day
+              05/01      Labor Day
+              07/25      Generic holiday
+              12/25      Christmas
+              May/Sun+2  Mother's day
+              13Fri      Friday the 13th
 
               # classes
               Mon,Wed Java Class
