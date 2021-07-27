@@ -174,18 +174,16 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 				break
 			}
 		}
-		if (u != 0) {
-			if (match(s, /^[+][1-5]/)) {
-				p = substr(s, 2, 1)
-				s = substr(s, 3)
-			} else if (match(s, /^-[1-5]/)) {
-				n = substr(s, 2, 1)
-				s = substr(s, 3)
-			}
-		}
 	}
 	if (d == 0 && u == 0)                   # if no day set, pattern is wrong
 		return ""
+	if (match(s, /^[+][1-5]/)) {            # check N week from beginning of month
+		p = substr(s, 2, 1)
+		s = substr(s, 3)
+	} else if (match(s, /^-[1-5]/)) {       # check N week from end of month
+		n = substr(s, 2, 1)
+		s = substr(s, 3)
+	}
 	sub(/^[\t ]+/, "", s)
 	$0 = s
 	y = (y == 0) ?  y = ".*" : sprintf("%d", y)
