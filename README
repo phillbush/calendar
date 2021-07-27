@@ -6,7 +6,7 @@ NAME
        calendar - print upcoming events
 
 SYNOPSIS
-       calendar [-d] [-A num] [-B num] [-t [[[cc]yy]mm]dd] [file...]
+       calendar [-d] [-A num] [-B num] [-t [[yyyy]mm]dd] [file...]
 
 DESCRIPTION
        calendar reads the named files for events, one event per line; and
