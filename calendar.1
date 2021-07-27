@@ -3,7 +3,7 @@
 calendar \- print upcoming events
 .SH SYNOPSIS
 .B calendar
-.RB [ \-d ]
+.RB [ \-l ]
 .RB [ \-A
 .IR num ]
 .RB [ \-B
@@ -37,7 +37,7 @@ Print lines from today and previous
 .I num
 days (backward, past).
 .TP
-.B \-d
+.B \-l
 Rather than print the date on the same line of each event,
 print the date alone in a line and followed by each event indented with a tab.
 .TP
@@ -81,7 +81,7 @@ Tue,Thu Computer Network Class
 If today were 09 March 2021, then running
 .B calendar
 with the options
-.B -d
+.B -l
 and
 .B -A7
 on this input would print the following:

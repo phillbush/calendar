@@ -6,7 +6,7 @@ NAME
        calendar - print upcoming events
 
 SYNOPSIS
-       calendar [-d] [-A num] [-B num] [-t [[yyyy]mm]dd] [file...]
+       calendar [-l] [-A num] [-B num] [-t [[yyyy]mm]dd] [file...]
 
 DESCRIPTION
        calendar reads the named files for events, one event per line; and
@@ -23,7 +23,7 @@ DESCRIPTION
 
        -B num Print lines from today and previous num days (backward, past).
 
-       -d     Rather than print the date on the same line of each event, print
+       -l     Rather than print the date on the same line of each event, print
               the date alone in a line and followed by each event indented
               with a tab.
 
@@ -64,7 +64,7 @@ EXAMPLES
               Tue,Thu Operating Systems Class
               Tue,Thu Computer Network Class
 
-       If today were 09 March 2021, then running calendar with the options -d
+       If today were 09 March 2021, then running calendar with the options -l
        and -A7 on this input would print the following:
 
               Sunday     09 May 09
