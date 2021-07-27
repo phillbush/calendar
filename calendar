@@ -262,8 +262,6 @@ BEGIN {
 	outdays[6] = "Saturday"
 	outdays[7] = "Sunday"
 
-	srand()
-
 	time  = systime();
 	year  = strftime("%Y", time) + 0
 	month = strftime("%m", time) + 0
