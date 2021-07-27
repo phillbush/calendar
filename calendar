@@ -118,15 +118,24 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 	# n = (negative) week number from end of month
 	# u = week day (1 = monday to 7 = sunday)
 	s = $0
-	if (npatt++ > 0) {
+	if (npatt++ > 0) {                      # remove leading comma
 		if (match(s, /^,[ \t]*/)) {
 			s = substr(s, RLENGTH + 1)
 		} else {
 			return ""
 		}
 	}
+	if (match(s, /^[A-Za-z]+[ \t]/)) {      # check for special dates
+		t = tolower(substr(s, 1, RLENGTH - 1))
+		if (t == "easter") {
+			s = substr(s, RLENGTH + 1)
+			sub(/^[\t ]+/, "", s)
+			$0 = s
+			return "easter"
+		}
+	}
 	y = m = d = p = n = u = 0
-	if (match(s, /^[0-9]+[\/.-]/)) {
+	if (match(s, /^[0-9]+[\/.-]/)) {        # check numeric month and year
 		m = substr(s, 1, RLENGTH - 1)
 		if (m == 0)
 			return ""
@@ -139,7 +148,7 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 			s = substr(s, RLENGTH + 1)
 		}
 	}
-	if (m == 0) {
+	if (m == 0) {                           # check month name
 		match(s, /^[A-Za-z]+/)
 		t = tolower(substr(s, 1, 3))
 		for (i = 1; i <= NMONTHS; i++) {
@@ -152,10 +161,10 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 			}
 		}
 	}
-	if (match(s, /^[0-9]+/)) {
+	if (match(s, /^[0-9]+/)) {              # check numeric month day
 		d = substr(s, 1, RLENGTH)
 		s = substr(s, RLENGTH + 1)
-	} else {
+	} else {                                # check week day name
 		match(s, /^[A-Za-z]+/)
 		t = tolower(substr(s, 1, 3))
 		for (i = 1; i <= NDAYS; i++) {
@@ -175,7 +184,7 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 			}
 		}
 	}
-	if (d == 0 && u == 0)
+	if (d == 0 && u == 0)                   # if no day set, pattern is wrong
 		return ""
 	sub(/^[\t ]+/, "", s)
 	$0 = s
@@ -186,6 +195,27 @@ function getpattern(    i, s, t, y, m, d, p, n, u) {
 	n = (n == 0) ?  n = "." : n
 	u = (u == 0) ?  u = "." : u
 	return sprintf("%s-%s-%s-%s-%s-%s", y, m, d, p, n, u)
+}
+
+function calceaster(    a, b, c, d, e,f, g, h, i, k, l, m, n, p) {
+	a = int(year % 19)
+	b = int(year / 100)
+	c = int(year % 100)
+	d = int(b / 4)
+	e = int(b % 4)
+	f = int((b + 8) / 25)
+	g = int((b + 1 - f) / 3)
+	h = int(((19 * a) + 15 + b - (d + g)) % 30)
+	i = int(c / 4)
+	k = int(c % 4)
+	l = int((32 + 2 * e + 2 * i - (h + k)) % 7)
+	m = int((a + 11 * h + 22 * l) / 451)
+	n = int((h + l + 114 - (7 * m)) / 31)
+	p = int((h + l + 114 - (7 * m)) % 31 + 1)
+	if (isleap(year))
+		p++
+	easter_month = n
+	easter_day = p
 }
 
 # get week of the month for given date
@@ -199,6 +229,13 @@ function getdate(    last, p, n) {
 	p = getwofm(year, month, day)
 	n = -1 * (p - last - 1)
 	return sprintf("%d-%02d-%02d-%1d-%1d-%1d", year, month, day, p, n, wday)
+}
+
+# check if date pattern matches date
+function patternmatch(patt, date) {
+	if (patt ~ "easter" && month == easter_month && day == easter_day)
+		return 1
+	return date ~ patt
 }
 
 BEGIN {
@@ -332,6 +369,10 @@ END {
 	if (error)
 		exit error
 	for (i = 0; i <= after; i++) {
+		if (prevyear != year) {         # compute movable feasts
+			calceaster()
+			prevyear = year
+		}
 		date = getdate()
 		if (printdate)
 			outdate = sprintf("%-9s  %02d %s %02d", outdays[wday], day, outmonths[month], day)
@@ -340,7 +381,7 @@ END {
 		delete a
 		n = 0
 		for (j = 1; j <= nevents; j++) {
-			if (date ~ events[j, "patt"]) {
+			if (patternmatch(events[j, "patt"], date)) {
 				a[++n] = events[j, "name"]
 			}
 		}
