@@ -1,7 +1,5 @@
 CALENDAR(1)                 General Commands Manual                CALENDAR(1)
 
-
-
 NAME
        calendar - print upcoming events
 
@@ -63,23 +61,25 @@ EXAMPLES
               Tue,Thu Operating Systems Class
               Tue,Thu Computer Network Class
 
-       If today were 09 March 2021, then running calendar with the options -d
+       If today were 09 March 2021, then running calendar with the options -l
        and -A7 on this input would print the following:
 
-              Sunday     09 May 09
+              Sunday     09 May 2021
                       Mother's day
-              Monday     10 May 10
+              Monday     10 May 2021
                       Java Class
-              Tuesday    11 May 11
+              Tuesday    11 May 2021
                       Algebra Class
                       Computer Network Class
                       Operating Systems Class
-              Wednesday  12 May 12
+              Wednesday  12 May 2021
                       Java Class
-              Thursday   13 May 13
+              Thursday   13 May 2021
                       Algebra Class
                       Computer Network Class
                       Operating Systems Class
+              Friday     14 May 2021
+              Saturday   15 May 2021
 
 SEE ALSO
        at(1), cal(1), cron(1)
@@ -103,7 +103,5 @@ STANDARDS
 
 HISTORY
        A calendar command appeared in Version 7 AT&T UNIX.
-
-
 
                                                                    CALENDAR(1)
