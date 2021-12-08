@@ -1,107 +1,58 @@
-CALENDAR(1)                 General Commands Manual                CALENDAR(1)
+                                calendar
 
-NAME
-       calendar - print upcoming events
+Calendar reads files for events, one event per line; and write to
+standard output those events ocurring in the next seven days (counting
+from today).
 
-SYNOPSIS
-       calendar [-l] [-A num] [-B num] [-t [[yyyy]mm]dd] [file...]
+Each event should begin with a date pattern in the format
+[[YYYY-[MM]]-DDWW[+N|-N].  The hyphen (-) that separates the values can
+be replaced by a slash (/) or a period (.).  Several date patterns can
+be supplied separated by a comma (,).
 
-DESCRIPTION
-       calendar reads the named files for events, one event per line; and
-       write to standard output those events beginning with either today's
-       date or tomorrow's.  On Fridays and Saturdays, events through Monday
-       are printed.  If a hyphen (-) is provided as argument, calendar reads
-       from the standard input.  If no file is provided as argument, calendar
-       reads the file named calendar on the current directory or on the
-       directory specified by the CALENDAR_DIR environment variable.
+YYYY should be any year number.  MM should be a month number or a month
+name (either complete or abbreviate, such as "April" or "Apr").  DD
+should be the number of a day in the month.  WW should be the name of a
+day in the week (either complete or abbreviate).  Either DD or WW (or
+both) must be supplied.
 
-       The options are as follows:
+The date pattern can be followed by +N or -N to specify the week on the
+month (for example Sun+2 is the second Sunday in the month, Mon-3 is
+the third from last Monday in the month).
 
-       -A num Print lines from today and next num days (forward, future).
+For example, consider the following input.
 
-       -B num Print lines from today and previous num days (backward, past).
+	# holidays
+	01/01      New Year's day
+	05/01      Labor Day
+	07/25      Generic holiday
+	12/25      Christmas
+	May/Sun+2  Mother's day
+	13Fri      Friday the 13th
+	
+	# classes
+	Mon,Wed Java Class
+	Tue,Thu Algebra Class
+	Tue,Thu Operating Systems Class
+	Tue,Thu Computer Network Class
 
-       -l     Rather than print the date on the same line of each event, print
-              the date alone in a line and followed by each event indented
-              with a tab.
+If today were 09 March 2021, then running calendar on this input would
+print the following:
 
-       -t[[yyyy]mm]dd
-              Act like the specified value is “today” instead of using the
-              current date.
+	Sunday     09 May 2021
+	        Mother's day
+	Monday     10 May 2021
+	        Java Class
+	Tuesday    11 May 2021
+	        Algebra Class
+	        Computer Network Class
+	        Operating Systems Class
+	Wednesday  12 May 2021
+	        Java Class
+	Thursday   13 May 2021
+	        Algebra Class
+	        Computer Network Class
+	        Operating Systems Class
+	Friday     14 May 2021
+	Saturday   15 May 2021
 
-       Each event should begin with a date pattern in the format
-       [[YYYY-[MM]]-DDWW[+N|-N].  The hyphen (-) that separates the values can
-       be replaced by a slash (/) or a period (.).  Several date patterns can
-       be supplied separated by a comma (,).
-
-       YYYY should be any year number.  MM should be a month number or a month
-       name (either complete or abbreviate, such as "April" or "Apr").  DD
-       should be the number of a day in the month.  WW should be the name of a
-       day in the week (either complete or abbreviate).  Either DD or WW (or
-       both) must be supplied.
-
-       The date pattern can be followed by +N or -N to specify the week on the
-       month (for example Sun+2 is the second Sunday in the month, Mon-3 is
-       the third from last Monday in the month).
-
-EXAMPLES
-       Consider the following input.
-
-              # holidays
-              01/01      New Year's day
-              05/01      Labor Day
-              07/25      Generic holiday
-              12/25      Christmas
-              May/Sun+2  Mother's day
-              13Fri      Friday the 13th
-
-              # classes
-              Mon,Wed Java Class
-              Tue,Thu Algebra Class
-              Tue,Thu Operating Systems Class
-              Tue,Thu Computer Network Class
-
-       If today were 09 March 2021, then running calendar with the options -l
-       and -A7 on this input would print the following:
-
-              Sunday     09 May 2021
-                      Mother's day
-              Monday     10 May 2021
-                      Java Class
-              Tuesday    11 May 2021
-                      Algebra Class
-                      Computer Network Class
-                      Operating Systems Class
-              Wednesday  12 May 2021
-                      Java Class
-              Thursday   13 May 2021
-                      Algebra Class
-                      Computer Network Class
-                      Operating Systems Class
-              Friday     14 May 2021
-              Saturday   15 May 2021
-
-SEE ALSO
-       at(1), cal(1), cron(1)
-
-STANDARDS
-       The calendar program previously selected lines which had the correct
-       date anywhere in the line.  This is no longer true: the date is only
-       recognized when it occurs at the beginning of a line.
-
-       The calendar program previously could interpret only one date for each
-       event.  This is no longer true: each event can occur in more than one
-       date (see the examples for the classes above).
-
-       The calendar program previously could not read events from the standard
-       input.  This is no longer true: if the argument is a hyphen (-), events
-       are read from the standard input.
-
-       The calendar program previously had an option to send a mail to all
-       users.  This is no longer true.  To have your calendar mailed every
-       day, use cron(8).
-
-HISTORY
-       A calendar command appeared in Version 7 AT&T UNIX.
-
-                                                                   CALENDAR(1)
+This software is in public domain and is provided AS IS, with NO WARRANTY.

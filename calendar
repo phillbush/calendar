@@ -1,317 +1,196 @@
-#!/bin/sh
-
-exec awk '
-# show usage and exit
-function usage() {
-	print "usage: calendar [-d] [-A num] [-B num] -t [yyyymmdd] [file ...]" >"/dev/stderr"
-	error = 1
-	exit 1
-}
-
-# show error and exit
-function err(s) {
-	printf "calendar: %s\n", s >"/dev/stderr"
-	error = 1
-	exit 1
-}
-
-# thanks https://github.com/e36freak
-function getopts(optstring, longarr,    opt, trimmed, hasarg, repeat) {
-	hasarg = repeat = 0
-	optarg = ""
-	optind++
-
-	# return -1 if the current arg is not an option or there are no args left
-	if (ARGV[optind] !~ /^-/ || optind >= ARGC) {
-		return -1
-	}
-
-	# if option is "--" (end of options), delete arg and return -1
-	if (ARGV[optind] == "--") {
-		for (i=1; i<=optind; i++) {
-			delete ARGV[i]
-		}
-		return -1
-	}
-
-	# remove the hyphen, and get just the option letter
-	opt = substr(ARGV[optind], 2, 1)
-	# set trimmed to whatevers left
-	trimmed = substr(ARGV[optind], 3)
-
-	# invalid option
-	if (!index(optstring, opt)) {
-		printf("invalid option -- '%s'\n", opt) > "/dev/stderr"
-		return "?"
-	}
-
-	# if there is more to the argument than just -o
-	if (length(trimmed)) {
-		# if option requires an argument, set the rest to optarg and hasarg to 1
-		if (index(optstring, opt ":")) {
-			optarg = trimmed
-			hasarg = 1
-
-		# otherwise, prepend a hyphen to the rest and set repeat to 1, so the
-		# same arg is processed again without the first option
-		} else {
-			ARGV[optind] = "-" trimmed
-			repeat = 1
-		}
-	}
-
-	# set optname by prepending a hypen to opt
-	optname = "-" opt
-
-	# if the option requires an arg and hasarg is 0
-	if (index(optstring, opt ":") && !hasarg) {
-		# increment optind, check if no arguments are left
-		if (++optind >= ARGC) {
-		  printf("option requires an argument -- '%s'\n", optname) > "/dev/stderr"
-		  return "?"
-		}
-
-		# set optarg
-		optarg = ARGV[optind]
-
-	# if repeat is set, decrement optind so we process the same arg again
-	# mutually exclusive to needing an argument, otherwise hasarg would be set
-	} else if (repeat) {
-		optind--
-	}
-
-	# delete all arguments up to this point, just to make sure
-	for (i=1; i<=optind; i++) {
-	  delete ARGV[i]
-	}
-
-	# return the option letter
-	return opt
-}
-
-# increment date 1 day
-function incdate() {
-	if (++day > daysinmonth[isleap(year), month]) {
-		day = 1
-		if (++month > 12) {
-			month = 1
-			year++
-		}
-	}
-	wday = (wday + 1) % NDAYS
-	if (wday == 0) {
-		wday = NDAYS
-	}
-}
+#!/usr/bin/awk -f
 
 # check if year is leap year
 function isleap(y) {
 	return (!(y % 4) && (y % 100) || !(y % 400))
 }
 
+# get week of month
+function getfmweek(d, w) {
+	return 1 + int((d - w + DAYSPERWEEK) / DAYSPERWEEK)
+}
+
+# get week of month from last to first (1 last week, 2 second to last week, etc)
+function getlmweek(y, d, w, p,    n) {
+	n = daytab[isleap(y), m] + 1
+	return getfmweek(n, w - d + n + MAXDAYS) - p + 1
+}
+
+# set today array
+function settoday(    time) {
+	time = systime();
+	today[YEAR]   = strftime("%Y", time) + 0
+	today[MONTH]  = strftime("%m", time) + 0
+	today[MDAY]   = strftime("%d", time) + 0
+	today[WDAY]   = strftime("%w", time) + 0
+	today[FMWEEK] = getfmweek(today[MDAY], today[WDAY])
+	today[LMWEEK] = getlmweek(today[YEAR], today[MDAY], today[WDAY], today[FMWEEK])
+}
+
 # get date pattern
-function getpattern(    i, s, t, y, m, d, p, n, u) {
-	# y = year
-	# m = month
-	# d = month day
-	# p = (positive) week number from beginning of month
-	# n = (negative) week number from end of month
-	# u = week day (1 = monday to 7 = sunday)
-	s = $0
-	if (npatt++ > 0) {                      # remove leading comma
-		if (match(s, /^,[ \t]*/)) {
-			s = substr(s, RLENGTH + 1)
+function getpattern(    s, n, patt) {
+	if (npatt++ > 0) {                                              # remove leading comma
+		if (match($0, /^,/)) {
+			$0 = substr($0, RLENGTH + 1)
 		} else {
 			return ""
 		}
 	}
-	y = m = d = p = n = u = 0
-	if (match(s, /^[0-9]+[\/.-]/)) {        # check numeric month and year
-		m = substr(s, 1, RLENGTH - 1)
-		if (m == 0)
-			return ""
-		s = substr(s, RLENGTH + 1)
-		if (match(s, /^[0-9]+[\/.-]/)) {
-			y = m
-			m = substr(s, 1, RLENGTH - 1)
-			if (m == 0)
-				return ""
-			s = substr(s, RLENGTH + 1)
+	sub(/^[ \t]+/, "")
+	if (match($0, /^[0-9]+[\/.-]/)) {
+		# got numeric year or month
+		patt[MONTH] = substr($0, 1, RLENGTH - 1) + 0
+		$0 = substr($0, RLENGTH + 1)
+		if (match($0, /^[0-9]+[\/.-]/)) {
+			# got numeric month after numeric year
+			patt[YEAR] = patt[MONTH]
+			patt[MONTH] = substr($0, 1, RLENGTH - 1) + 0
+			$0 = substr($0, RLENGTH + 1)
+		} else if (match($0, /^[A-Za-z]+[\/.-]/) && (n = inmonths[tolower(substr($0, 1, 3))])) {
+		        # got month name after numeric year
+			patt[YEAR] = patt[MONTH]
+			patt[MONTH] = n
+			$0 = substr($0, RLENGTH + 1)
 		}
+	} else if (match($0, /^[A-Za-z]+[\/.-]/) && (n = inmonths[tolower(substr($0, 1, 3))])) {
+		# got month name
+		patt[MONTH] = n
+		$0 = substr($0, RLENGTH + 1)
 	}
-	if (m == 0) {                           # check month name
-		match(s, /^[A-Za-z]+/)
-		t = tolower(substr(s, 1, 3))
-		for (i = 1; i <= NMONTHS; i++) {
-			if (t == months[i]) {
-				if (substr(s, RLENGTH + 1) !~ /[\/.-]/) 
-					return ""
-				m = i
-				s = substr(s, RLENGTH + 2)
-				break
-			}
-		}
+	if (match($0, /^[0-9]+/)) {
+		# got numeric month day
+		patt[MDAY] = substr($0, 1, RLENGTH) + 0
+		$0 = substr($0, RLENGTH + 1)
 	}
-	if (match(s, /^[0-9]+/)) {              # check numeric month day
-		d = substr(s, 1, RLENGTH)
-		s = substr(s, RLENGTH + 1)
+	if (match($0, /^[A-Za-z]+/) && (n = indays[tolower(substr($0, 1, 3))])) {
+		# got weekday name
+		patt[WDAY] = n
+		$0 = substr($0, RLENGTH + 1)
 	}
-	if (match(s, /^[A-Za-z]+/)) {           # check week day name
-		t = tolower(substr(s, 1, 3))
-		for (i = 1; i <= NDAYS; i++) {
-			if (t == days[i]) {
-				u = i
-				s = substr(s, RLENGTH + 1)
-				break
-			}
-		}
+	if (patt[MDAY] == 0 && patt[WDAY] == 0)
+		return;
+	if (match($0, /^[+-]?[0-9]+/)) {
+		# got numeric week of the month
+		if ((n = substr($0, 1, RLENGTH) + 0) < 0)
+			patt[LMWEEK] = -n
+		else if (n > 0)
+			patt[FMWEEK] = n
+		$0 = substr($0, RLENGTH + 1)
 	}
-	if (d == 0 && u == 0)
-		return ""
-	if (match(s, /^[+][1-5]/)) {            # check N week from beginning of month
-		p = substr(s, 2, 1)
-		s = substr(s, 3)
-	} else if (match(s, /^-[1-5]/)) {       # check N week from end of month
-		n = substr(s, 2, 1)
-		s = substr(s, 3)
-	}
-	sub(/^[\t ]+/, "", s)
-	$0 = s
-	y = (y == 0) ?  y = ".*" : sprintf("%d", y)
-	m = (m == 0) ?  m = ".." : sprintf("%02d", m)
-	d = (d == 0) ?  d = ".." : sprintf("%02d", d)
-	p = (p == 0) ?  p = "." : p
-	n = (n == 0) ?  n = "." : n
-	u = (u == 0) ?  u = "." : u
-	return sprintf("%s-%s-%s-%s-%s-%s", y, m, d, p, n, u)
+	sub(/^[\t ]+/, "")
+	return (patt[YEAR]   != 0 ? sprintf("%d-",   patt[YEAR])               : ".*-") \
+	       (patt[MONTH]  != 0 ? sprintf("%02d-", patt[MONTH])              : "..-") \
+	       (patt[MDAY]   != 0 ? sprintf("%02d-", patt[MDAY])               : "..-") \
+	       (patt[WDAY]   != 0 ? sprintf("%1d-",  patt[WDAY] % DAYSPERWEEK) : ".-") \
+	       (patt[FMWEEK] != 0 ? sprintf("%1d-",  patt[FMWEEK])             : ".-") \
+	       (patt[LMWEEK] != 0 ? sprintf("%1d",   patt[LMWEEK])             : ".")
 }
 
-# get week of the month for given date
-function getwofm(y, m, d) {
-	return strftime("%W", mktime(y " " m " " d " 12 00 00")) - strftime("%W", mktime(y " " m " 1 12 00 00")) + 1
-}
-
-# get date string (in format y-m-d-p-n-u) for current date
-function getdate(    last, p, n) {
-	last = getwofm(year, month, daysinmonth[isleap(year), month])
-	p = getwofm(year, month, day)
-	n = -1 * (p - last - 1)
-	return sprintf("%d-%02d-%02d-%1d-%1d-%1d", year, month, day, p, n, wday)
+# increment date for today
+function incrdate() {
+	today[WDAY] = (today[WDAY] + 1) % DAYSPERWEEK;
+	if (today[WDAY] == 0) {
+		today[FMWEEK]++;
+		today[LMWEEK]--;
+	}
+	if (today[MDAY] < daytab[isleap(today[YEAR]), today[MONTH]]) {
+		today[MDAY]++
+	} else if (today[MONTH] < 12) {
+		today[MONTH]++;
+		today[MDAY] = 1;
+		today[FMWEEK] = 1;
+		today[LMWEEK] = getlmweek(today[YEAR], today[MDAY], today[WDAY], today[FMWEEK])
+	} else {
+		today[YEAR]++;
+		today[MONTH] = 1;
+		today[MDAY] = 1;
+		today[FMWEEK] = 1;
+		today[LMWEEK] = getlmweek(today[YEAR], today[MDAY], today[WDAY], today[FMWEEK])
+	}
 }
 
 BEGIN {
-	CALENDARFILE="calendar"
+	NDAYS = 7
 
-	SECSPERDAY = 24 * 60 * 60
+	daytab[0, 1] =  daytab[1, 1] =  31
+	daytab[0, 2] =                  28
+	daytab[1, 2] =                  29
+	daytab[0, 3] =  daytab[1, 3] =  31
+	daytab[0, 4] =  daytab[1, 4] =  30
+	daytab[0, 5] =  daytab[1, 5] =  31
+	daytab[0, 6] =  daytab[1, 6] =  30
+	daytab[0, 7] =  daytab[1, 7] =  31
+	daytab[0, 8] =  daytab[1, 8] =  31
+	daytab[0, 9] =  daytab[1, 9] =  30
+	daytab[0, 10] = daytab[1, 10] = 31
+	daytab[0, 11] = daytab[1, 11] = 30
+	daytab[0, 12] = daytab[1, 12] = 31
 
-	daysinmonth[0, 1] =  daysinmonth[1, 1] =  31
-	daysinmonth[0, 2] =                       28
-	daysinmonth[1, 2] =                       29
-	daysinmonth[0, 3] =  daysinmonth[1, 3] =  31
-	daysinmonth[0, 4] =  daysinmonth[1, 4] =  30
-	daysinmonth[0, 5] =  daysinmonth[1, 5] =  31
-	daysinmonth[0, 6] =  daysinmonth[1, 6] =  30
-	daysinmonth[0, 7] =  daysinmonth[1, 7] =  31
-	daysinmonth[0, 8] =  daysinmonth[1, 8] =  31
-	daysinmonth[0, 9] =  daysinmonth[1, 9] =  30
-	daysinmonth[0, 10] = daysinmonth[1, 10] = 31
-	daysinmonth[0, 11] = daysinmonth[1, 11] = 30
-	daysinmonth[0, 12] = daysinmonth[1, 12] = 31
-
-	NMONTHS = 12
-	months[1] =  "jan"
-	months[2] =  "feb"
-	months[3] =  "mar"
-	months[4] =  "apr"
-	months[5] =  "may"
-	months[6] =  "jun"
-	months[7] =  "jul"
-	months[8] =  "aug"
-	months[9] =  "sep"
-	months[10] = "oct"
-	months[11] = "nov"
-	months[12] = "dec"
-	outmonths[1] =  "January"
-	outmonths[2] =  "February"
-	outmonths[3] =  "March"
-	outmonths[4] =  "April"
-	outmonths[5] =  "May"
-	outmonths[6] =  "June"
-	outmonths[7] =  "July"
-	outmonths[8] =  "August"
-	outmonths[9] =  "September"
+	MONTHSPERYEAR = 12
+	inmonths["jan"] = 1
+	inmonths["feb"] = 2
+	inmonths["mar"] = 3
+	inmonths["apr"] = 4
+	inmonths["may"] = 5
+	inmonths["jun"] = 6
+	inmonths["jul"] = 7
+	inmonths["aug"] = 8
+	inmonths["sep"] = 9
+	inmonths["oct"] = 10
+	inmonths["nov"] = 11
+	inmonths["dec"] = 12
+	outmonths[1]  = "January"
+	outmonths[2]  = "February"
+	outmonths[3]  = "March"
+	outmonths[4]  = "April"
+	outmonths[5]  = "May"
+	outmonths[6]  = "June"
+	outmonths[7]  = "July"
+	outmonths[8]  = "August"
+	outmonths[9]  = "September"
 	outmonths[10] = "October"
 	outmonths[11] = "November"
 	outmonths[12] = "December"
 
-	NDAYS = 7
-	days[1] = "mon"
-	days[2] = "tue"
-	days[3] = "wed"
-	days[4] = "thu"
-	days[5] = "fri"
-	days[6] = "sat"
-	days[7] = "sun"
+	MAXDAYS = 35
+	DAYSPERWEEK = 7
+	indays["mon"] = 1
+	indays["tue"] = 2
+	indays["wed"] = 3
+	indays["thu"] = 4
+	indays["fri"] = 5
+	indays["sat"] = 6
+	indays["sun"] = 7
 	outdays[1] = "Monday"
 	outdays[2] = "Tuesday"
 	outdays[3] = "Wednesday"
 	outdays[4] = "Thursday"
 	outdays[5] = "Friday"
 	outdays[6] = "Saturday"
-	outdays[7] = "Sunday"
+	outdays[0] = "Sunday"
 
-	time  = systime();
-	year  = strftime("%Y", time) + 0
-	month = strftime("%m", time) + 0
-	day   = strftime("%d", time) + 0
-	time  = mktime(year " " month " " day " 12 00 00")
-	while ((c = getopts("A:B:lt:")) != -1) {
-		if (c == "A") {
-			after = optarg + 0
-		} else if (c == "B") {
-			before = optarg + 0
-		} else if (c == "l") {
-			printdate = 1
-		} else if (c == "t") {
-			today = optarg
-		} else {
-			usage()
-		}
-	}
-	len = length(today)
-	if (today ~ /^..$/) {
-		time = mktime(year " " month " " today " 12 00 00")
-	} else if (today ~ /^....$/) {
-		s = substr(today, 1, 2) " " substr(today, 3, 2)
-		time = mktime(year " " s " 12 00 00")
-	} else if (today ~ /^.*....$/) {
-		s = substr(today, 1, len - 4) " " substr(today, len - 3, 2) " " substr(today, len - 1, 2)
-		time = mktime(s " 12 00 00")
-	}
-	if (time < 0) {
-		err("invalid time")
-	}
-	time -= before * SECSPERDAY
-	year  = strftime("%Y", time) + 0
-	month = strftime("%m", time) + 0
-	day   = strftime("%d", time) + 0
-	wday  = strftime("%u", time) + 0
-	if (!after) {
-		if (wday == 5) {
-			after = 3
-		} else if (wday == 6) {
-			after = 2
-		} else {
-			after = 1
-		}
-	}
-	if (optind == ARGC) {   # no argument provided, read default calendar file
-		CALENDARDIR = ENVIRON["CALENDAR_DIR"]
-		if (system("test -r " CALENDARFILE) != 0 && CALENDARDIR) {
-			CALENDARFILE = CALENDARDIR "/" CALENDARFILE
-		}
-		ARGV[ARGC++] = CALENDARFILE
-	}
+	# subscripts for the events array
+	NAME = 1
+	FILE = 2
+	PATT = 3
+
+	# subscripts for the time and patt arrays
+	YEAR   = 1
+	MONTH  = 2
+	MDAY   = 3              # day of the month
+	WDAY   = 4              # day of the week
+	FMWEEK = 5              # week of the month, from first to last
+	LMWEEK = 6              # week of the month, from last to first
+
+	settoday()
+}
+
+FNR == 1 {
+	nfiles++
+}
+
+NF == 0 || substr($1, 1, 1) == "#" {
+	next
 }
 
 {
@@ -321,28 +200,24 @@ BEGIN {
 		patt = patt (patt ? "|" : "") s
 	if (patt) {
 		nevents++
-		events[nevents, "patt"] = patt
-		events[nevents, "name"] = $0
+		events[nevents, PATT] = patt
+		events[nevents, FILE] = nfiles
+		events[nevents, NAME] = $0
 	}
 }
 
 END {
-	if (error)
-		exit error
-	for (i = 0; i <= after; i++) {
-		date = getdate()
-		if (printdate)
-			outdate = sprintf("%-9s  %02d %s %02d", outdays[wday], day, outmonths[month], year)
-		else
-			outdate = sprintf("%s %02d ", substr(outmonths[month], 1, 3), day)
-		if (printdate)
-			print outdate
+	for (i = 1; i <= NDAYS; i++) {
+		date = sprintf("%d-%02d-%02d-%1d-%1d-%1d", today[YEAR], today[MONTH], today[MDAY], today[WDAY], today[FMWEEK], today[LMWEEK])
+		printf "%-10s %02d %s %d\n", outdays[today[WDAY]], today[MDAY], outmonths[today[MONTH]], today[YEAR]
 		for (j = 1; j <= nevents; j++) {
-			if (date ~ events[j, "patt"]) {
-				print (printdate ? "\t" : outdate) events[j, "name"]
+			if (date ~ events[j, PATT]) {
+				printf "\t"
+				if (ARGC > 2)
+					printf "%s: ", ARGV[events[j, FILE]]
+				printf "%s\n", events[j, NAME]
 			}
 		}
-		incdate()
+		incrdate()
 	}
 }
-' "$@"
